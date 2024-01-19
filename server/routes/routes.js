@@ -3,12 +3,11 @@ const express = require('express');
 const {
   getContributions,
   getPRsReviewedAndCreated,
-
 } = require('../controllers/controllers');
 
 const router = express.Router();
 
-router.route('/contributions/:username').get(getContributions);
-router.route('/prs/:username').get(getPRsReviewedAndCreated);
+router.route('/contributions').get(getContributions);
+router.route('/prs').get(getPRsReviewedAndCreated);
 
 module.exports = router;

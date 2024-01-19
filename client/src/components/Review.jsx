@@ -1,18 +1,36 @@
-import * as React from 'react';
+// Review.js
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { setPRsData } from '../redux/prsDataSlice';
 import { PieChart, pieArcLabelClasses } from '@mui/x-charts/PieChart';
 
-const data = [
-  { value: 17, label: 'Aditya Vats' },
-  { value: 60, label: 'Ashish Vats' },
-  { value: 23, label: 'Naseem Shaik' },
-];
+const Review = () => {
+  const dispatch = useDispatch();
+  const prsData = useSelector((state) => state.prsData);
 
-const size = {
-  width: 500,
-  height: 250,
-};
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/v1/prs');
+        const data = await response.json();
+        dispatch(setPRsData(data));
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+    fetchData();
+  }, [dispatch]);
 
-export default function Review() {
+  const size = {
+    width: 500,
+    height: 250,
+  };
+
+  const reviewData = Object.entries(prsData).map(([username, userData]) => ({
+    username,
+    value: userData.prsReviewed.length,
+  }));
+  
   return (
     <section className='border-2 p-4 my-4 rounded-md bg-gray-100 shadow-md'>
       <h1 className='text-xl text-gray-600 font-bold text-left p-2'>
@@ -24,7 +42,7 @@ export default function Review() {
             {
               arcLabel: (item) => `${item.value}%`,
               arcLabelMinAngle: 0,
-              data,
+              data: reviewData,
             },
           ]}
           sx={{
@@ -37,9 +55,11 @@ export default function Review() {
         />
       </div>
 
-      <p className='text-gray-500 italic p-2 text-md text-c'>
+      <p className='text-gray-500 italic p-2 text-md text-center'>
         *Above percentages illustrate each person's contribution to PR Review.
       </p>
     </section>
   );
-}
+};
+
+export default Review;

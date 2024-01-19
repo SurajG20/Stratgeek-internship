@@ -5,6 +5,27 @@ const owner = process.env.OWNER;
 const repo = process.env.REPO;
 const githubToken = process.env.GITHUB_TOKEN;
 
+const fetchPRs = async (state, activityType) => {
+  try {
+    const response = await axios.get(
+      `${githubApiBaseUrl}/repos/${owner}/${repo}/activity`,
+      {
+        headers: {
+          Authorization: `Bearer ${githubToken}`,
+        },
+        params: {
+          state,
+          activity_type: activityType,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching PRs:', error);
+    throw error;
+  }
+};
+
 module.exports.getContributions = async (req, res) => {
   try {
     const contributionsResponse = await axios.get(
@@ -60,41 +81,48 @@ module.exports.getContributions = async (req, res) => {
   }
 };
 
+
+
 module.exports.getPRsReviewedAndCreated = async (req, res) => {
   try {
-    const username = req.params.username;
-    const PRreviewed = await axios.get(
-      `${githubApiBaseUrl}/repos/${owner}/${repo}/activity`,
-      {
-        headers: {
-          Authorization: `Bearer ${githubToken}`,
-        },
-        params: {
-          state: 'open',
-          activity_type: 'pr_merge',
-          actor: `${username}`,
-        },
-      }
-    );
+    const prsCreated = await fetchPRs('open', 'pr_merge');
+    const prsReviewed = await fetchPRs('open', 'merge_queue_merge');
 
-    const PRpending = await axios.get(
-      `${githubApiBaseUrl}/repos/${owner}/${repo}/activity`,
-      {
-        headers: {
-          Authorization: `Bearer ${githubToken}`,
-        },
-        params: {
-          state: 'open',
-          activity_type: 'merge_queue_merge',
-          actor: `${username}`,
-        },
-      }
-    );
+    const prsData = {};
 
-    let PRCreated = PRpending.data.length + PRreviewed.data.length;
-    let PRReviewed = PRreviewed.data.length;
-    res.status(StatusCodes.ACCEPTED).json({ PRCreated, PRReviewed });
+    prsCreated.forEach((pr) => {
+      const username = pr.actor.login;
+      if (!prsData[username]) {
+        prsData[username] = {
+          prsCreated: [],
+          prsReviewed: [],
+        };
+      }
+      prsData[username].prsCreated.push({
+        number: pr.number,
+        title: pr.title,
+        createdAt: pr.created_at,
+      });
+    });
+
+    prsReviewed.forEach((pr) => {
+      const username = pr.actor.login;
+      if (!prsData[username]) {
+        prsData[username] = {
+          prsCreated: [],
+          prsReviewed: [],
+        };
+      }
+      prsData[username].prsReviewed.push({
+        number: pr.number,
+        title: pr.title,
+        createdAt: pr.created_at,
+      });
+    });
+
+    res.status(StatusCodes.ACCEPTED).json(prsData);
   } catch (error) {
+    console.error('Error fetching PRs data:', error);
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ error: 'Internal Server Error' });

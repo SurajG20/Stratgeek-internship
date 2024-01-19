@@ -19,12 +19,10 @@ const Individual = () => {
   const contributions = useSelector((state) => state.contributions);
 
   useEffect(() => {
-    // Fetch contributions data from API and update the state
-    // This is a simplified example; replace it with your actual API call
     const fetchData = async () => {
       try {
         const response = await fetch(
-          'http://localhost:3000/api/v1/contributions/username'
+          'http://localhost:3000/api/v1/contributions'
         );
         const data = await response.json();
         dispatch(setContributions(data.contributions));
@@ -56,7 +54,7 @@ const Individual = () => {
             <TableRow>
               <TableCell>Team</TableCell>
               <TableCell align='center'>No. of Line Contributions</TableCell>
-              <TableCell align='center'>No. of File Contributions</TableCell>
+              <TableCell align='center'>No. of Commits</TableCell>
               <TableCell align='center'>PRs merged</TableCell>
             </TableRow>
           </TableHead>
