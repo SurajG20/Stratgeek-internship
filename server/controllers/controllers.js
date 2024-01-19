@@ -5,7 +5,6 @@ const owner = process.env.OWNER;
 const repo = process.env.REPO;
 const githubToken = process.env.GITHUB_TOKEN;
 
-
 module.exports.getContributions = async (req, res) => {
   try {
     const contributionsResponse = await axios.get(
@@ -48,70 +47,56 @@ module.exports.getContributions = async (req, res) => {
           (total, week) => total + week.a + week.d,
           0
         ),
-        fileContributions: contributor.weeks.reduce(
-          (total, week) => total + week.c,
-          0
-        ),
+        commmits: contributor.weeks.reduce((total, week) => total + week.c, 0),
         mergedPRs,
       };
     });
 
     res.status(StatusCodes.ACCEPTED).json({ contributions });
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: 'Internal Server Error' });
   }
 };
 
 module.exports.getPRsReviewedAndCreated = async (req, res) => {
   try {
-    const createdPRsResponse = await axios.get(
-      `${githubApiBaseUrl}/repos/${owner}/${repo}/pulls`,
+    const username = req.params.username;
+    const PRreviewed = await axios.get(
+      `${githubApiBaseUrl}/repos/${owner}/${repo}/activity`,
       {
         headers: {
           Authorization: `Bearer ${githubToken}`,
         },
         params: {
           state: 'open',
+          activity_type: 'pr_merge',
+          actor: `${username}`,
         },
       }
     );
 
-    const allPRsResponse = await axios.get(
-      `${githubApiBaseUrl}/repos/${owner}/${repo}/pulls`,
+    const PRpending = await axios.get(
+      `${githubApiBaseUrl}/repos/${owner}/${repo}/activity`,
       {
         headers: {
           Authorization: `Bearer ${githubToken}`,
         },
+        params: {
+          state: 'open',
+          activity_type: 'merge_queue_merge',
+          actor: `${username}`,
+        },
       }
     );
 
-    const individuals = {};
-
-    createdPRsResponse.data.forEach((pr) => {
-      const creator = pr.user.login;
-      individuals[creator] = individuals[creator] || {
-        created: 0,
-        reviewed: 0,
-      };
-      individuals[creator].created += 1;
-    });
-
-    allPRsResponse.data.forEach((pr) => {
-      const reviewers = pr.requested_reviewers.map(
-        (reviewer) => reviewer.login
-      );
-      reviewers.forEach((reviewer) => {
-        individuals[reviewer] = individuals[reviewer] || {
-          created: 0,
-          reviewed: 0,
-        };
-        individuals[reviewer].reviewed += 1;
-      });
-    });
-
-    res.status(StatusCodes.ACCEPTED).json({ individuals });
+    let PRCreated = PRpending.data.length + PRreviewed.data.length;
+    let PRReviewed = PRreviewed.data.length;
+    res.status(StatusCodes.ACCEPTED).json({ PRCreated, PRReviewed });
   } catch (error) {
-    console.error(error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Internal Server Error' });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: 'Internal Server Error' });
   }
 };

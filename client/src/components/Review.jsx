@@ -37,7 +37,7 @@ export default function Review() {
         />
       </div>
 
-      <p className='text-gray-500 italic p-2 text-md'>
+      <p className='text-gray-500 italic p-2 text-md text-c'>
         *Above percentages illustrate each person's contribution to PR Review.
       </p>
     </section>

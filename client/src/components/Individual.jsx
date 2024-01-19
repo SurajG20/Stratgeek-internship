@@ -1,4 +1,7 @@
-import * as React from 'react';
+// Individual.js
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { setContributions } from '../redux/contributionSlice';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -11,12 +14,37 @@ function createData(team, line, file, pr) {
   return { team, line, file, pr };
 }
 
-const rows = [
-  createData('Naseem', 800, 12, 2),
-  createData('Surya', 500, 7, 2),
-];
+const Individual = () => {
+  const dispatch = useDispatch();
+  const contributions = useSelector((state) => state.contributions);
 
-export default function Individual() {
+  useEffect(() => {
+    // Fetch contributions data from API and update the state
+    // This is a simplified example; replace it with your actual API call
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          'http://localhost:3000/api/v1/contributions/username'
+        );
+        const data = await response.json();
+        dispatch(setContributions(data.contributions));
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, [dispatch]);
+
+  const rows = contributions.map((contributor) =>
+    createData(
+      contributor.username,
+      contributor.lineContributions,
+      contributor.commmits,
+      contributor.mergedPRs.length
+    )
+  );
+
   return (
     <section className='border-2 py-4 my-4 rounded-md bg-gray-100 shadow-md px-8'>
       <h1 className='text-left text-xl font-bold text-gray-600 p-2'>
@@ -51,4 +79,6 @@ export default function Individual() {
       </TableContainer>
     </section>
   );
-}
+};
+
+export default Individual;
